@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>SnapClass – AI Face Recognition Attendance System</title>
+  <meta name="description" content="Automated, contactless attendance using real-time AI face recognition. No more manual registers." />
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #060913;
+      color: #E2E8F0;
+      scroll-behavior: smooth;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    :root {
+      --primary: #00F2FE;
+      --primary-dark: #0284c7;
+      --secondary: #4FACFE;
+      --accent: #8b5cf6;
+      --surface: rgba(17, 24, 39, 0.7);
+      --surface-card: rgba(30, 41, 59, 0.6);
+      --border-light: rgba(148, 163, 184, 0.15);
+      --text-muted: #94A3B8;
+      --glow: 0 0 20px rgba(0, 242, 254, 0.4);
+      --glow-purple: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+
+    /* Ambient Background Glows */
+    .bg-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+      top: -200px;
+      left: -200px;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .bg-glow-2 {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, transparent 70%);
+      bottom: -200px;
+      right: -200px;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Navigation */
+    nav {
+      background: rgba(6, 9, 19, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 5%;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .nav-logo img {
+      height: 40px;
+      width: auto;
+      filter: drop-shadow(0 0 4px var(--primary));
+    }
+
+    .nav-brand {
+      font-weight: 800;
+      font-size: 1.6rem;
+      background: linear-gradient(135deg, #00F2FE, #8b5cf6);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      font-weight: 500;
+      color: #CBD5E1;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+      text-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+    }
+
+    .nav-cta {
+      background: linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%);
+      padding: 0.6rem 1.5rem;
+      border-radius: 50px;
+      color: #000 !important;
+      font-weight: 700;
+      box-shadow: var(--glow);
+      transition: all 0.3s ease !important;
+    }
+
+    .nav-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(0, 242, 254, 0.6);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .hamburger span {
+      width: 28px;
+      height: 3px;
+      background: #CBD5E1;
+      border-radius: 10px;
+      transition: 0.3s;
+    }
+
+    /* Hero Section */
+    #hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6rem 5%;
+      position: relative;
+      min-height: 90vh;
+    }
+
+    .hero-content {
+      flex: 1.2;
+      min-width: 300px;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 242, 254, 0.1);
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      backdrop-filter: blur(5px);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #00F2FE;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #00F2FE;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1);}
+      50% { opacity: 0.4; transform: scale(1.3);}
+    }
+
+    .hero-title {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -1px;
+    }
+
+    .highlight {
+      color: transparent;
+      -webkit-text-stroke: 1px var(--primary);
+      text-stroke: 1px var(--primary);
+    }
+
+    .highlight2 {
+      background: linear-gradient(to right, #00F2FE, #8b5cf6);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 85%;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: white;
+      padding: 1rem 2.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 700;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--glow-purple);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 1rem 2.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      color: #FFF;
+      transition: 0.3s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: rgba(0, 242, 254, 0.05);
+    }
+
+    .hero-visual {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      z-index: 2;
+      position: relative;
+    }
+
+    .face-frame {
+      position: relative;
+      background: var(--surface-card);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .face-frame img {
+      width: 100%;
+      max-width: 450px;
+      border-radius: 16px;
+      display: block;
+    }
+
+    .scan-line {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: calc(100% - 30px);
+      height: 3px;
+      background: var(--primary);
+      box-shadow: 0 0 15px var(--primary);
+      animation: scan 2.5s ease-in-out infinite;
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    @keyframes scan {
+      0% { top: 15px; }
+      50% { top: calc(100% - 18px); }
+      100% { top: 15px; }
+    }
+
+    /* Section Headers */
+    .section-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .section-tag {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--primary);
+      font-weight: 700;
+      background: rgba(0, 242, 254, 0.1);
+      padding: 6px 16px;
+      border-radius: 30px;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-size: 2.8rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+    }
+
+    /* Glassmorphism Feature Grid */
+    .features {
+      padding: 6rem 5%;
+      position: relative;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: var(--surface-card);
+      backdrop-filter: blur(12px);
+      padding: 2.5rem;
+      border-radius: 24px;
+      transition: all 0.4s ease;
+      border: 1px solid var(--border-light);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0;
+      transition: 0.4s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(0, 242, 254, 0.3);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .feature-card:hover::before { opacity: 1; }
+
+    .f-icon-box {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      display: inline-block;
+      text-shadow: var(--glow);
+    }
+
+    .feature-card h3 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+    }
+
+    /* Workflow */
+    .workflow-section {
+      padding: 6rem 5%;
+      background: linear-gradient(180deg, rgba(6, 9, 19, 0) 0%, rgba(15, 23, 42, 0.4) 100%);
+    }
+
+    .workflow-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .workflow-step {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4rem;
+      margin-bottom: 6rem;
+    }
+
+    .workflow-step:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    .wf-content {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .step-number {
+      font-size: 5rem;
+      font-weight: 800;
+      background: linear-gradient(180deg, var(--border-light) 0%, transparent 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      line-height: 1;
+      margin-bottom: -1.5rem;
+      opacity: 0.5;
+    }
+
+    .wf-content h3 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    .wf-content p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .badge-pill {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .wf-image {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .wf-image img {
+      width: 100%;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-light);
+      transition: transform 0.4s;
+    }
+
+    .wf-image:hover img {
+      transform: scale(1.02);
+      border-color: rgba(0, 242, 254, 0.4);
+      box-shadow: var(--glow);
+    }
+
+    .wf-image::before {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 25px;
+      z-index: -1;
+      opacity: 0.15;
+      filter: blur(15px);
+    }
+
+    /* Tech Stack */
+    .tech-stack {
+      padding: 5rem 5%;
+      text-align: center;
+      border-top: 1px solid var(--border-light);
+    }
+    
+    .tech-grid-modern {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      justify-content: center;
+      margin-top: 3rem;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .tech-item-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 1rem 2rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s;
+    }
+    
+    .tech-item-card:hover { 
+      border-color: var(--primary); 
+      color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: var(--glow);
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(0, 242, 254, 0.1));
+      text-align: center;
+      padding: 6rem 2rem;
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid rgba(0, 242, 254, 0.2);
+    }
+
+    .cta-section h2 { 
+      font-size: 2.8rem; 
+      margin-bottom: 1.5rem;
+      font-weight: 800;
+    }
+
+    .btn-white {
+      background: #fff;
+      color: #000;
+      padding: 1rem 2.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 800;
+      display: inline-block;
+      margin-top: 1rem;
+      transition: 0.3s;
+      box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-white:hover {
+      transform: scale(1.05);
+      box-shadow: 0 15px 35px rgba(255, 255, 255, 0.4);
+    }
+
+    /* Footer */
+    .main-footer {
+      background: #02040A;
+      padding: 4rem 5% 2rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+    .footer-brand .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;}
+    .footer-brand img { height: 35px; width: auto; }
+    .footer-brand span { font-size: 1.4rem; font-weight: 800; color: #fff;}
+    .footer-links h4 { color: #fff; margin-bottom: 1.2rem; font-size: 1.1rem;}
+    .footer-links ul { list-style: none; }
+    .footer-links a { color: var(--text-muted); text-decoration: none; line-height: 2.2; font-size: 0.95rem; transition: 0.2s;}
+    .footer-links a:hover { color: var(--primary);}
+    .footer-bottom { text-align: center; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); color: #64748B; font-size: 0.9rem;}
+
+    /* FAQ Styles */
+    .faq-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      background: rgba(30, 41, 59, 0.4);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 1.5rem 2rem;
+      text-align: left;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #E2E8F0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: 0.2s;
+    }
+    .faq-question span {
+      font-size: 1.8rem;
+      font-weight: 300;
+      transition: transform 0.2s;
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 0 2rem;
+      color: var(--text-muted);
+      border-top: 0px solid transparent;
+    }
+    .faq-item.active .faq-answer {
+      max-height: 250px;
+      padding: 0 2rem 1.5rem 2rem;
+    }
+    .faq-item.active .faq-question span {
+      transform: rotate(45deg);
+    }
+    .faq-item.active {
+      border-color: rgba(0, 242, 254, 0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      visibility: hidden;
+      z-index: 2000;
+      transition: 0.3s ease;
+    }
+    .lightbox.active { opacity: 1; visibility: visible; }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+      transform: scale(0.95);
+      transition: 0.3s;
+    }
+    .lightbox.active img { transform: scale(1); }
+    .lightbox-close {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      font-size: 1.5rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .lightbox-close:hover { background: var(--primary); color: #000; border-color: var(--primary);}
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .hero-title { font-size: 2.8rem; }
+      .workflow-step, .workflow-step:nth-child(even) { flex-direction: column; gap: 2rem; text-align: center;}
+      .nav-links { display: none; }
+      .nav-links.open { 
+        display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; 
+        background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); padding: 2rem; 
+        border-bottom: 1px solid var(--border-light);
+      }
+      .hamburger { display: flex; }
+    }
+
+    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="bg-glow-2"></div>
+
+<nav>
+  <a href="#hero" class="nav-logo">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SnapClass Logo">
+    <span class="nav-brand">SnapClass</span>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#tech">Tech Stack</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="https://autoattendance.streamlit.app/" target="_blank" rel="noopener" class="nav-cta">Launch App ↗</a></li>
+  </ul>
+  <div class="hamburger" onclick="toggleNav()"><span></span><span></span><span></span></div>
+</nav>
+
+<section id="hero">
+  <div class="hero-content">
+    <div class="hero-badge fade-up"><span class="dot"></span> LIVE · AI-Powered · Zero Touch</div>
+    <h1 class="hero-title fade-up" style="transition-delay: 0.1s;">
+      <span class="highlight">Automated</span><br />Face Recognition<br />
+      <span class="highlight2">Attendance</span>
+    </h1>
+    <p class="hero-subtitle fade-up" style="transition-delay: 0.2s;">
+      SnapClass detects and recognises student faces in real-time, marks attendance instantly, and exports reports. Replace manual registers with sub-second AI precision.
+    </p>
+    <div class="hero-actions fade-up" style="transition-delay: 0.3s;">
+      <a href="https://autoattendance.streamlit.app/" target="_blank" rel="noopener" class="btn-primary">🚀 Launch Live App</a>
+      <a href="#how-it-works" class="btn-secondary">Explore Workflow ↓</a>
+    </div>
+  </div>
+  <div class="hero-visual fade-up" style="transition-delay: 0.4s;">
+    <div class="face-frame">
+      <img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Real-time Face Detection">
+      <div class="scan-line"></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="features">
+  <div class="section-header fade-up"><span class="section-tag">// Core Capabilities</span><h2 class="section-title">Built for Modern Classrooms</h2><p class="section-desc">Everything you need for a frictionless, automated attendance workflow powered by Deep Learning.</p></div>
+  <div class="feature-grid">
+    <div class="feature-card fade-up"><div class="f-icon-box">⚡</div><h3>Real-Time Detection</h3><p>Sub-second face detection and recognition latency directly from a live webcam feed or uploaded image.</p></div>
+    <div class="feature-card fade-up"><div class="f-icon-box">🛡️</div><h3>Anti-Proxy Security</h3><p>Advanced facial embedding matching ensures only registered students are marked present. No physical ID required.</p></div>
+    <div class="feature-card fade-up"><div class="f-icon-box">📚</div><h3>Course Management</h3><p>Teachers can dynamically generate course codes, create subjects, and monitor individual enrollment.</p></div>
+    <div class="feature-card fade-up"><div class="f-icon-box">📤</div><h3>One-Click Export</h3><p>Instantly download comprehensive attendance sheets containing names, roll numbers, dates, and timestamps.</p></div>
+    <div class="feature-card fade-up"><div class="f-icon-box">🌐</div><h3>Cloud-Native Interface</h3><p>Runs entirely in your browser via Streamlit. Zero local installation required for teachers or students.</p></div>
+    <div class="feature-card fade-up"><div class="f-icon-box">🔐</div><h3>Role-Based Access</h3><p>Dedicated, secure portals for Faculty (to manage/scan) and Students (to track their own metrics).</p></div>
+  </div>
+</section>
+
+<section id="how-it-works" class="workflow-section">
+  <div class="section-header fade-up"><span class="section-tag">🎯Step-by-Step</span><h2 class="section-title">How SnapClass Works</h2><p class="section-desc">See the platform in action. Click any image to view it in full screen.</p></div>
+  <div class="workflow-container">
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">01</div><h3>Secure Role Portal</h3><span class="badge-pill">Authentication</span><p style="margin-top:1rem">Users choose their role. The system routes teachers to the management dashboard and students to their tracking portal, protected by secure login.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/dashboard.png') }}')"><img src="{{ url_for('static', filename='images/dashboard.png') }}" alt="Role Portal"></div></div>
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">02</div><h3>Student Enrollment Dashboard</h3><span class="badge-pill">Onboarding</span><p>Students can quickly view their enrolled subjects, check their overall attendance percentage, and input new course codes to join classes dynamically.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/Screenshot 2026-05-26 140047.png') }}')"><img src="{{ url_for('static', filename='images/Screenshot 2026-05-26 140047.png') }}" alt="Student Dashboard"></div></div>
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">03</div><h3>Course Management</h3><span class="badge-pill">Teacher Tools</span><p>Faculty members have full control. They can create new subjects, generate unique shareable codes, and track total student enrollments in one view.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/Screenshot 2026-05-26 140255.png') }}')"><img src="{{ url_for('static', filename='images/Screenshot 2026-05-26 140255.png') }}" alt="Manage Subjects"></div></div>
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">04</div><h3>AI Attendance Capture</h3><span class="badge-pill">Computer Vision</span><p>The core engine. Teachers select the subject and activate the camera. The AI scans the classroom frame, detects registered faces, and maps them to student IDs.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/Screenshot 2026-05-26 140154.png') }}')"><img src="{{ url_for('static', filename='images/Screenshot 2026-05-26 140154.png') }}" alt="Take Attendance"></div></div>
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">05</div><h3>Real-time Recognition Results</h3><span class="badge-pill">Processing</span><p>In milliseconds, the system outputs verification bounding boxes. It categorises students as Present or Absent with high-confidence facial embeddings.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/Screenshot 2026-05-26 140345.png') }}')"><img src="{{ url_for('static', filename='images/Screenshot 2026-05-26 140345.png') }}" alt="Face Recognition Results"></div></div>
+    <div class="workflow-step fade-up"><div class="wf-content"><div class="step-number">06</div><h3>Historical Data & Exports</h3><span class="badge-pill">Analytics</span><p>All attendance logs are securely saved with timestamps. Teachers can review past classes, track trends, and export pristine CSV/Excel sheets for administration.</p></div><div class="wf-image" onclick="openLightbox('{{ url_for('static', filename='images/Screenshot 2026-05-26 140218.png') }}')"><img src="{{ url_for('static', filename='images/Screenshot 2026-05-26 140218.png') }}" alt="Historical Records"></div></div>
+  </div>
+</section>
+
+<section id="tech" class="tech-stack"><div class="section-header fade-up"><span class="section-tag">⚙️System Architecture</span><h2 class="section-title">Powered by Open Source</h2></div><div class="tech-grid-modern fade-up"><div class="tech-item-card">Python 3.x</div><div class="tech-item-card">Flask</div><div class="tech-item-card">Streamlit</div><div class="tech-item-card">OpenCV</div><div class="tech-item-card">face_recognition</div><div class="tech-item-card">dlib</div><div class="tech-item-card">NumPy</div><div class="tech-item-card">Pandas</div><div class="tech-item-card">HTML5 / CSS3</div></div></section>
+
+<section id="faq" class="features" style="padding-top:2rem;"><div class="section-header fade-up"><span class="section-tag">💡 Frequently Asked Questions</span><h2 class="section-title">Got Questions?</h2><p class="section-desc">Everything you need to know about SnapClass and how the AI attendance system works.</p></div>
+<div class="faq-container">
+  <div class="faq-item fade-up"><button class="faq-question">What is SnapClass?<span>+</span></button><div class="faq-answer"><p>SnapClass is an AI-powered attendance management system that uses real-time face recognition to automatically mark student attendance without manual roll calls.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">How does the attendance system work?<span>+</span></button><div class="faq-answer"><p>Teachers start the camera and SnapClass scans student faces using AI facial recognition models. The system matches detected faces with registered student data and marks attendance instantly.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">Is SnapClass secure?<span>+</span></button><div class="faq-answer"><p>Yes. SnapClass uses facial embeddings and secure authentication to prevent proxy attendance and unauthorized access.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">Can students join subjects using codes?<span>+</span></button><div class="faq-answer"><p>Yes. Teachers can generate unique subject codes and students can join classes instantly using those codes.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">Does SnapClass support attendance export?<span>+</span></button><div class="faq-answer"><p>Absolutely. Attendance records can be exported into CSV or Excel sheets with timestamps and student details.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">Do students need to install any software?<span>+</span></button><div class="faq-answer"><p>No installation is required. SnapClass runs directly in the browser using a cloud-based interface.</p></div></div>
+  <div class="faq-item fade-up"><button class="faq-question">Which technologies are used in SnapClass?<span>+</span></button><div class="faq-answer"><p>SnapClass is built using Python, Flask, Streamlit, OpenCV, face_recognition, dlib, NumPy, and Pandas.</p></div></div>
+</div></section>
+
+<section class="cta-section"><div class="fade-up"><h2>Ready to Automate Your Classroom?</h2><p style="color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 600px; margin: 0 auto 2rem;">No sign-up required. Launch the live application directly and experience zero-touch attendance tracking.</p><a href="https://autoattendance.streamlit.app/" target="_blank" rel="noopener" class="btn-white">Initialize System ↗</a></div></section>
+
+<footer class="main-footer"><div class="footer-grid"><div class="footer-brand"><div class="logo"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo"><span>SnapClass</span></div><p style="color: var(--text-muted);">AI Biometrics for next‑gen education. Say goodbye to manual roll calls.</p></div><div class="footer-links"><h4>Platform</h4><ul><li><a href="#features">Core Features</a></li><li><a href="#how-it-works">Workflow</a></li><li><a href="#tech">Architecture</a></li></ul></div><div class="footer-links"><h4>Legal</h4><ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li><li><a href="#">Data Security</a></li></ul></div></div><div class="footer-bottom"><p>© 2026 SnapClass · AI Face Recognition Attendance · Built by Vishal</p></div></footer>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)"><button class="lightbox-close" onclick="closeLightbox(event)">✕</button><img id="lightboxImg" src="" alt="Fullscreen Screenshot"></div>
+
+<script>
+  function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
+  
+  function openLightbox(src){ 
+    const lb = document.getElementById('lightbox'); 
+    const imgEl = document.getElementById('lightboxImg'); 
+    imgEl.src = src; 
+    lb.classList.add('active'); 
+  }
+  
+  function closeLightbox(e){ 
+    if(e.target.tagName !== 'IMG') {
+      document.getElementById('lightbox').classList.remove('active'); 
+    }
+  }
+  
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.getElementById('lightbox').classList.remove('active'); });
+  
+  const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }); }, { threshold:0.15 });
+  document.querySelectorAll('.fade-up').forEach(el=>observer.observe(el));
+  
+  document.querySelectorAll('.nav-links a').forEach(a=> a.addEventListener('click',()=> document.getElementById('navLinks')?.classList.remove('open')));
+  
+  // FAQ toggles
+  document.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', function(e){
+      const parentItem = this.closest('.faq-item');
+      const isActive = parentItem.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+      if(!isActive) parentItem.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
